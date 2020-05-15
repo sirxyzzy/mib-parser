@@ -27,7 +27,7 @@ mod tests {
 
     #[test]
     fn not_a_number() {
-        assert!(MibParser::parse(Rule::num, "-1234XYZ").is_err(), "Expected and error!");
+        assert!(MibParser::parse(Rule::num, "-1234XYZ").is_err(), "Expected an error!");
     }
 
     #[test]
@@ -56,4 +56,30 @@ mod tests {
         assert_eq!(inner.as_str(), r#"this is a 
         quoted string"#);
     }
+
+    #[test]
+    fn ident_0() {
+        let pair = MibParser::parse(Rule::ident, "ab1ur_d-gh0").unwrap().next().unwrap();
+        assert_eq!(pair.as_rule(), Rule::ident);
+        assert_eq!(pair.as_str(), "ab1ur_d-gh0");
+    }
+
+    #[test]
+    fn ident_1() {
+        assert!(MibParser::parse(Rule::ident, "0abc").is_err(), "Expected an error for ident 0abc!");
+    }
+
+    #[test]
+    fn ident_2() {
+        assert!(MibParser::parse(Rule::ident, "_abc").is_err(), "Expected an error for ident _abc!");
+    }
+
+    #[test]
+    fn object_id_0() {
+        let pair = MibParser::parse(Rule::obj_id, "synology	 OBJECT IDENTIFIER 
+        ::= { enterprises 6574 }").unwrap().next().unwrap();
+
+        assert_eq!(pair.as_rule(), Rule::obj_id);
+    }
+
 }

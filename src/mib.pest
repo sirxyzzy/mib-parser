@@ -5,20 +5,12 @@ inner = @{ char* }
 char = { !("\"") ~ ANY | doublequote }
 doublequote = { "\"\"" }
 
-operation = _{ add | subtract | multiply | divide | power }
-    add      = { "+" }
-    subtract = { "-" }
-    multiply = { "*" }
-    divide   = { "/" }
-    power    = { "^" }
-
-expr = { term ~ (operation ~ term)* }
-term = _{ num | "(" ~ expr ~ ")" }
-
-calculation = _{ SOI ~ expr ~ EOI }
+ident = @{ ASCII_ALPHA ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "-")* }
 
 // So this may be a bit too generous!
 mib = _{ SOI ~ ANY* ~ EOI }
 
-WHITESPACE = _{ " " | "\t" }
+obj_id = { ident ~ "OBJECT" ~ "IDENTIFIER" ~ "::=" ~ "{" ~ ident ~ num ~ "}" } 
+
+WHITESPACE = _{ " " | "\t" | NEWLINE }
 COMMENT = _{ "--" ~ (!"\n" ~ ANY)* }
