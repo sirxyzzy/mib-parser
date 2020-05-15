@@ -1,7 +1,6 @@
 extern crate mib_parser;
-use mib_parser::parse_mib;
+use mib_parser::parse_file;
 
-use std::fs;
 use clap::Clap;
 /// Parse a MIB file
 #[derive(Clap)]
@@ -20,9 +19,7 @@ fn main() {
 
     println!("Parsing {}", mib_file);
 
-    let mib_string = fs::read_to_string(mib_file).unwrap();
-
-    parse_mib(&mib_string);  
+    parse_file(&mib_file);  
 }
 
 
