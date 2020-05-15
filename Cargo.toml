@@ -1,0 +1,16 @@
+[package]
+name = "mib_parser"
+version = "0.1.0"
+authors = ["Andy Philpotts <andy@failfree.net>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = "3.0.0-beta.1"
+regex = "1.0"
+
+[dependencies.nom]
+version = "6.0.0-alpha1"
+features = ["regexp"]
+
