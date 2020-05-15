@@ -9,10 +9,12 @@ use nom::{
 
 use regex::Regex;
 
+#[allow(dead_code)]
 fn from_decimal(input: &str) -> Result<u32, std::num::ParseIntError> {
     u32::from_str_radix(input, 10)
 }
 
+#[allow(dead_code)]
 pub fn number(input:&str) -> IResult<&str, u32> {
     map_res(
         //take_while1(is_digit),
@@ -21,6 +23,7 @@ pub fn number(input:&str) -> IResult<&str, u32> {
     )(input)
 }
 
+#[allow(dead_code)]
 pub fn identifier(input:&str) -> IResult<&str, String> {
     let (input,t) = tuple((
         alpha1,
@@ -32,11 +35,12 @@ pub fn identifier(input:&str) -> IResult<&str, String> {
     Ok((input, identifier))
 }
 
+#[allow(dead_code)]
 pub fn quoted_string(input:&str) -> IResult<&str, &str> {
     let re = Regex::new(r#""([^"]|"")*""#).unwrap();
     let parser = re_match::<(&str, ErrorKind)>(re);
     parser(input)
-    
+
     // TODO: Annoyingly we need to post-process, to collapse any
     // spaces either side of any newline characters, this often happens
     // as it is common to indent successive lines of text in a multi-line
