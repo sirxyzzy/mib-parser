@@ -13,6 +13,8 @@ pub fn parse_mib(mib_text: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pest::iterators::Pairs;
+    use pest::RuleType;
 
     #[test]
     fn number() {
@@ -76,10 +78,30 @@ mod tests {
 
     #[test]
     fn object_id_0() {
-        let pair = MibParser::parse(Rule::obj_id, "synology	 OBJECT IDENTIFIER 
-        ::= { enterprises 6574 }").unwrap().next().unwrap();
+        let mut pairs = MibParser::parse(Rule::obj_id, "synology	 OBJECT 
+         IDENTIFIER 
+        ::= { enterprises 6574 }").unwrap();
+
+        // Useful for debugging, remember to run as: cargo test -- --nocapture
+        print_pairs(&pairs);
+        
+        let pair = pairs.next().unwrap();
 
         assert_eq!(pair.as_rule(), Rule::obj_id);
     }
 
+    fn print_pairs<R: RuleType>(pairs: &Pairs<R>) {
+        print_pairs_helper(pairs.clone(), 0)
+    }
+
+    fn print_pairs_helper<R: RuleType>(pairs: Pairs<R>, level: usize) {
+        let indent = " ".repeat(level*4);
+        for pair in pairs {
+            // A pair is a combination of the rule which matched and a span of input
+            println!("{}{:?} '{}'", indent, pair.as_rule(), pair.as_str());
+    
+            // A pair can be converted to an iterator of the tokens which make it up:
+            print_pairs_helper(pair.into_inner(), level+1);
+        }
+    }
 }

@@ -1,3 +1,16 @@
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+COMMENT = _{ "--" ~ (!"\n" ~ ANY)* }
+
+builtin_type = { null_type
+            | boolean_type
+            | real_type
+            | object_identifier_type }
+
+null_type = { "NULL" }
+boolean_type = { "BOOLEAN" }
+real_type = { "REAL" }
+object_identifier_type = { "OBJECT" ~ "IDENTIFIER" }
+
 num = @{ ASCII_DIGIT+ }
 
 quoted = ${ "\"" ~ inner ~ "\"" }
@@ -7,10 +20,7 @@ doublequote = { "\"\"" }
 
 ident = @{ ASCII_ALPHA ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "-")* }
 
+obj_id = { ident ~ object_identifier_type ~ "::=" ~ "{" ~ ident ~ num ~ "}" } 
+
 // So this may be a bit too generous!
 mib = _{ SOI ~ ANY* ~ EOI }
-
-obj_id = { ident ~ "OBJECT" ~ "IDENTIFIER" ~ "::=" ~ "{" ~ ident ~ num ~ "}" } 
-
-WHITESPACE = _{ " " | "\t" | NEWLINE }
-COMMENT = _{ "--" ~ (!"\n" ~ ANY)* }
