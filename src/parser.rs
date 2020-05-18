@@ -33,16 +33,23 @@ fn get_number<R: RuleType>(mut pairs: Pairs<R>) -> u64 {
     pairs.next().unwrap().as_str().parse::<u64>().unwrap()
 }
 
+#[allow(dead_code)]
 fn get_hex_number<R: RuleType>(mut pairs: Pairs<R>) -> u64 {
     let s = pairs.next().unwrap().as_str();
     let len = s.len();
     u64::from_str_radix(&s[..len-2], 16).unwrap()
 }
 
+#[allow(dead_code)]
 fn get_bin_number<R: RuleType>(mut pairs: Pairs<R>) -> u64 {
     let s = pairs.next().unwrap().as_str();
     let len = s.len();
     u64::from_str_radix(&s[..len-2], 2).unwrap()
+}
+
+#[allow(dead_code)]
+fn get_identifier<R: RuleType>(mut pairs: Pairs<R>) -> String {
+    pairs.next().unwrap().as_str().to_owned()
 }
 
 #[allow(dead_code)]
@@ -111,9 +118,8 @@ mod tests {
 
     #[test]
     fn identifier_0() {
-        let pair = MibParser::parse(Rule::identifier, "ab1ur_d-gh0").unwrap().next().unwrap();
-        assert_eq!(pair.as_rule(), Rule::identifier);
-        assert_eq!(pair.as_str(), "ab1ur_d-gh0");
+        let identifier = get_identifier(MibParser::parse(Rule::identifier, "ab1ur_d-gh0").unwrap());
+        assert_eq!(identifier, "ab1ur_d-gh0");
     }
 
     #[test]
