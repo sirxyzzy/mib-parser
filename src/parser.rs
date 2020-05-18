@@ -14,7 +14,7 @@ pub fn parse_mib(mib_text: &str) {
 }
 
 #[allow(dead_code)]
-fn get_quoted_string_value<R: RuleType>(mut pairs: Pairs<R>) -> String {
+fn get_quoted_string<R: RuleType>(mut pairs: Pairs<R>) -> String {
     println!("get_quoted_string_value");
 
     let raw = pairs.next().unwrap().into_inner().as_str().to_owned();
@@ -26,6 +26,11 @@ fn get_quoted_string_value<R: RuleType>(mut pairs: Pairs<R>) -> String {
     let re = Regex::new(r" *\r?\n *").unwrap();
 
     re.replace_all(raw.as_str(), "\n").to_string()
+}
+
+#[allow(dead_code)]
+fn get_number<R: RuleType>(mut pairs: Pairs<R>) -> u64 {
+    pairs.next().unwrap().as_str().parse::<u64>().unwrap()
 }
 
 #[allow(dead_code)]
@@ -50,13 +55,8 @@ mod tests {
 
     #[test]
     fn number() {
-        let pair = MibParser::parse(Rule::number_string, "1234XYZ").unwrap().next().unwrap();
-        assert_eq!(pair.as_rule(), Rule::number_string);
-        assert_eq!(pair.as_str(), "1234");
-
-        // Parse result str
-        let value = pair.as_str().parse::<i32>().unwrap();
-        assert_eq!(value, 1234);
+        let number = get_number(MibParser::parse(Rule::number_string, "12345678XYZ").unwrap());
+        assert_eq!(number, 12345678);
     }
 
     #[test]
@@ -66,22 +66,22 @@ mod tests {
 
     #[test]
     fn quoted_string_1() {
-        let result = get_quoted_string_value(MibParser::parse(Rule::quoted_string, r#""this is a quoted string""#).unwrap());
+        let result = get_quoted_string(MibParser::parse(Rule::quoted_string, r#""this is a quoted string""#).unwrap());
         assert_eq!(result, "this is a quoted string");
     }
 
     #[test]
     fn quoted_string_2() {
-        let result = get_quoted_string_value(MibParser::parse(Rule::quoted_string, r#""this is a ""quoted"" string""#).unwrap());
+        let result = get_quoted_string(MibParser::parse(Rule::quoted_string, r#""this is a ""quoted"" string""#).unwrap());
         assert_eq!(result, r#"this is a "quoted" string"#);
     }
 
     #[test]
     fn quoted_string_3() {
-        let result = get_quoted_string_value(MibParser::parse(Rule::quoted_string, "\"this is a    \n   quoted string\"").unwrap());
+        let result = get_quoted_string(MibParser::parse(Rule::quoted_string, "\"this is a    \n   quoted string\"").unwrap());
         assert_eq!(result, "this is a\nquoted string");
 
-        let result = get_quoted_string_value(MibParser::parse(Rule::quoted_string, "\"this is a    \r\n   quoted string\"").unwrap());
+        let result = get_quoted_string(MibParser::parse(Rule::quoted_string, "\"this is a    \r\n   quoted string\"").unwrap());
         assert_eq!(result, "this is a\nquoted string");
     }
 
