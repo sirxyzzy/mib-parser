@@ -1,12 +1,9 @@
-WHITESPACE = _{ " " | "\t" | NEWLINE }
-COMMENT = _{ "--" ~ (!"\n" ~ ANY)* }
-
 // actually there are derived types too
 a_type = { builtin_type | defined_type }
 
-module_reference = { ident ~ "." }
+module_reference = { identifier ~ "." }
 
-defined_type = { module_reference? ~ ident ~ value_or_constraint_list? }
+defined_type = { module_reference? ~ identifier ~ value_or_constraint_list? }
 
 value_or_constraint_list = { "placemarker" }
 
@@ -25,7 +22,7 @@ size_constraint = { "SIZE" ~ value_constraint_list }
 value_constraint_list = { "(" ~ value_constraint ~ ("|" ~ value_constraint)* ~ ")" }
 
 // Huge simplification here too
-value_constraint = { num }
+value_constraint = { number_string }
 
 null_type = { "NULL" }
 boolean_type = { "BOOLEAN" }
@@ -33,16 +30,23 @@ real_type = { "REAL" }
 object_identifier_type = { "OBJECT" ~ "IDENTIFIER" }
 sequence_of_type = { "SEQUENCE" ~ constraint_list? ~ "OF" ~ a_type }
 
-num = @{ ASCII_DIGIT+ }
+identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "-")* }
 
-quoted = ${ "\"" ~ inner ~ "\"" }
-inner = @{ char* }
-char = { !("\"") ~ ANY | doublequote }
-doublequote = { "\"\"" }
+number_string = @{ ASCII_DIGIT+ }
 
-ident = @{ ASCII_ALPHA ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "-")* }
+binary_string = ${ ('0'..'1')+ ~ "'" ~ ^"b" }
 
-obj_id = { ident ~ object_identifier_type ~ "::=" ~ "{" ~ ident ~ num ~ "}" } 
+hex_string = ${ ASCII_HEX_DIGIT+ ~ "'" ~ ^"h" }
+
+quoted_string = ${ "\"" ~ inner ~ "\"" }
+    inner = @{ char* }
+    char = { !("\"") ~ ANY | "\"\"" }
+    doublequote = { "\"\"" }
+
+obj_id = { identifier ~ object_identifier_type ~ "::=" ~ "{" ~ identifier ~ number_string ~ "}" } 
 
 // So this may be a bit too generous!
 mib = _{ SOI ~ ANY* ~ EOI }
+
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+COMMENT = _{ "--" ~ (!"\n" ~ ANY)* }
