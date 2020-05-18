@@ -33,6 +33,18 @@ fn get_number<R: RuleType>(mut pairs: Pairs<R>) -> u64 {
     pairs.next().unwrap().as_str().parse::<u64>().unwrap()
 }
 
+fn get_hex_number<R: RuleType>(mut pairs: Pairs<R>) -> u64 {
+    let s = pairs.next().unwrap().as_str();
+    let len = s.len();
+    u64::from_str_radix(&s[..len-2], 16).unwrap()
+}
+
+fn get_bin_number<R: RuleType>(mut pairs: Pairs<R>) -> u64 {
+    let s = pairs.next().unwrap().as_str();
+    let len = s.len();
+    u64::from_str_radix(&s[..len-2], 2).unwrap()
+}
+
 #[allow(dead_code)]
 fn print_pairs<R: RuleType>(pairs: Pairs<R>) {
     print_pairs_helper(pairs, 0)
@@ -87,17 +99,14 @@ mod tests {
 
     #[test]
     fn binary_string() {
-        let pair = MibParser::parse(Rule::binary_string, "11110000'b").unwrap().next().unwrap();
-        assert_eq!(pair.as_rule(), Rule::binary_string);
-        assert_eq!(pair.as_str(), "11110000'b");
+        let result = get_bin_number(MibParser::parse(Rule::binary_string, "11110000'b").unwrap());
+        assert_eq!(result, 0b11110000);
     }
 
     #[test]
     fn hex_string() {
-        let pair = MibParser::parse(Rule::hex_string, "DEADBEEF'H").unwrap().next().unwrap();
-        
-        assert_eq!(pair.as_rule(), Rule::hex_string);
-        assert_eq!(pair.as_str(), "DEADBEEF'H");
+        let result = get_hex_number(MibParser::parse(Rule::hex_string, "DEADBEEF'H").unwrap());
+        assert_eq!(result, 0xDEADBEEF);
     }
 
     #[test]
