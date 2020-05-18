@@ -1,15 +1,31 @@
 WHITESPACE = _{ " " | "\t" | NEWLINE }
 COMMENT = _{ "--" ~ (!"\n" ~ ANY)* }
 
+// actually there are derived types too
+a_type = { builtin_type }
+
 builtin_type = { null_type
             | boolean_type
             | real_type
             | object_identifier_type }
 
+constraint_list = { "(" ~ constraint ~ ("|" ~ constraint)* ~ ")" }
+
+// There are WAY more constraints
+constraint = { size_constraint }
+
+size_constraint = { "SIZE" ~ value_constraint_list }
+
+value_constraint_list = { "(" ~ value_constraint ~ ("|" ~ value_constraint)* ~ ")" }
+
+// Huge simplification here too
+value_constraint = { num }
+
 null_type = { "NULL" }
 boolean_type = { "BOOLEAN" }
 real_type = { "REAL" }
 object_identifier_type = { "OBJECT" ~ "IDENTIFIER" }
+sequence_of_type = { "SEQUENCE" ~ constraint_list? ~ "OF" ~ a_type }
 
 num = @{ ASCII_DIGIT+ }
 
