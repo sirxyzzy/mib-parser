@@ -2,7 +2,13 @@ WHITESPACE = _{ " " | "\t" | NEWLINE }
 COMMENT = _{ "--" ~ (!"\n" ~ ANY)* }
 
 // actually there are derived types too
-a_type = { builtin_type }
+a_type = { builtin_type | defined_type }
+
+module_reference = { ident ~ "." }
+
+defined_type = { module_reference? ~ ident ~ value_or_constraint_list? }
+
+value_or_constraint_list = { "placemarker" }
 
 builtin_type = { null_type
             | boolean_type

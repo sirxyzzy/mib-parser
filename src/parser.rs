@@ -83,11 +83,19 @@ mod tests {
         ::= { enterprises 6574 }").unwrap();
 
         // Useful for debugging, remember to run as: cargo test -- --nocapture
-        print_pairs(&pairs);
+        // print_pairs(&pairs);
         
         let pair = pairs.next().unwrap();
 
         assert_eq!(pair.as_rule(), Rule::obj_id);
+    }
+
+    #[test]
+    fn sequence_1() {
+        let mut pairs = MibParser::parse(Rule::sequence_of_type, "SEQUENCE OF wibble").unwrap();
+        print_pairs(&pairs);
+
+        let _pair = pairs.next().unwrap();
     }
 
     fn print_pairs<R: RuleType>(pairs: &Pairs<R>) {
