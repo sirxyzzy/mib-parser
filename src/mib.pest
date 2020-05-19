@@ -1,5 +1,5 @@
 // actually there are derived types too
-a_type = { builtin_type | defined_type }
+some_type = { builtin_type | defined_type }
 
 module_reference = { identifier ~ "." }
 
@@ -28,7 +28,7 @@ null_type = { "NULL" }
 boolean_type = { "BOOLEAN" }
 real_type = { "REAL" }
 object_identifier_type = { "OBJECT" ~ "IDENTIFIER" }
-sequence_of_type = { "SEQUENCE" ~ constraint_list? ~ "OF" ~ a_type }
+sequence_of_type = { "SEQUENCE" ~ constraint_list? ~ "OF" ~ some_type }
 
 identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "-")* }
 
@@ -43,10 +43,60 @@ quoted_string = ${ "\"" ~ inner ~ "\"" }
     char = { !("\"") ~ ANY | "\"\"" }
     doublequote = { "\"\"" }
 
-obj_id = { identifier ~ object_identifier_type ~ "::=" ~ "{" ~ identifier ~ number_string ~ "}" } 
+// redundant
+// obj_id = { identifier ~ object_identifier_type ~ "::=" ~ "{" ~ identifier ~ number_string ~ "}" }
+// see value assignment... 
 
 // So this may be a bit too generous!
 mib = _{ SOI ~ ANY* ~ EOI }
+
+
+//
+// Value notation productions
+//
+
+value_assignment = { identifier ~ some_type ~ "::=" ~ value }
+
+value = { builtin_value | defined_value }
+
+defined_value = { module_reference? ~ identifier }
+
+builtin_value = { null_value
+             | boolean_value
+             | special_real_value
+             | number_value
+             | binary_value
+             | hex_value
+             | string_value
+             | bit_or_objectidentifier_value }
+
+null_value = { "NULL" }
+
+boolean_value = { "TRUE" | "FALSE" }
+
+special_real_value = { "PLUS-INFINITY" | "MINUS-INFINITY" }
+
+number_value = { "-"? ~ number_string }
+
+binary_value = { binary_string }
+
+hex_value = { hex_string }
+
+string_value = { quoted_string }
+
+bit_or_objectidentifier_value = { name_value_list }
+
+bit_value = { name_value_list }
+
+objectidentifier_value = { name_value_list }
+
+name_value_list = { "{" ~ name_value_component* ~ "}" }
+
+name_value_component = { ","? ~ name_or_number }
+
+name_or_number = { number_string | identifier | name_and_number } 
+
+name_and_number = { identifier ~ "(" ~ (number_string | defined_value ) ~ ")" }
 
 WHITESPACE = _{ " " | "\t" | NEWLINE }
 COMMENT = _{ "--" ~ (!"\n" ~ ANY)* }

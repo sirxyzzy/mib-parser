@@ -8,6 +8,10 @@ use regex::Regex;
 #[grammar = "mib.pest"] // relative to src
 struct MibParser;
 
+struct ObjectIdentifierNode {
+
+}
+
 pub fn parse_mib(mib_text: &str) {
     println!("Parsing mib of size {}", mib_text.len());
     let _ = MibParser::parse(Rule::mib, mib_text);
@@ -15,8 +19,6 @@ pub fn parse_mib(mib_text: &str) {
 
 #[allow(dead_code)]
 fn get_quoted_string<R: RuleType>(mut pairs: Pairs<R>) -> String {
-    println!("get_quoted_string_value");
-
     let raw = pairs.next().unwrap().into_inner().as_str().to_owned();
 
     // Replace double quotes with single
@@ -134,11 +136,9 @@ mod tests {
 
     #[test]
     fn object_id_0() {
-        let pair = MibParser::parse(Rule::obj_id, "synology	 OBJECT 
-         IDENTIFIER 
-        ::= { enterprises 6574 }").unwrap().next().unwrap();
+        let pairs = MibParser::parse(Rule::value_assignment, "synology OBJECT IDENTIFIER ::= { enterprises 6574 }").unwrap();
 
-        assert_eq!(pair.as_rule(), Rule::obj_id);
+        print_pairs(pairs)
     }
 
     #[test]
