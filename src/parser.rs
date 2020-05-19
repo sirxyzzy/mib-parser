@@ -2,18 +2,23 @@ use pest::Parser;
 use pest::iterators::Pairs;
 use pest::RuleType;
 use regex::Regex;
+use indextree::Arena;
 
 #[allow(dead_code)]
 #[derive(Parser)]
 #[grammar = "mib.pest"] // relative to src
 struct MibParser;
 
-struct ObjectIdentifierNode {
-
+#[allow(dead_code)]
+/// When a MIB is loaded, the parsed information ends up in a tree of these
+pub struct ObjectIdentifierNode {
+    pub id: u64,
+    pub name: String
 }
 
 pub fn parse_mib(mib_text: &str) {
     println!("Parsing mib of size {}", mib_text.len());
+    let _arena = &mut Arena::<ObjectIdentifierNode>::new();
     let _ = MibParser::parse(Rule::mib, mib_text);
 }
 
@@ -145,6 +150,4 @@ mod tests {
     fn sequence_1() {
         let _pair = MibParser::parse(Rule::sequence_of_type, "SEQUENCE OF wibble").unwrap().next().unwrap();
     }
-
-
 }

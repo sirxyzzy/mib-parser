@@ -11,5 +11,6 @@ clap = "3.0.0-beta.1"
 regex = "1.0"
 pest = "2.0"
 pest_derive = "2.0"
+indextree = "4.0"
 
 
