@@ -19,7 +19,7 @@ pub struct ObjectIdentifierNode {
 pub fn parse_mib(mib_text: &str) {
     println!("Parsing mib of size {}", mib_text.len());
     let _arena = &mut Arena::<ObjectIdentifierNode>::new();
-    let _ = MibParser::parse(Rule::mib, mib_text);
+    let _ = MibParser::parse(Rule::main, mib_text);
 }
 
 #[allow(dead_code)]

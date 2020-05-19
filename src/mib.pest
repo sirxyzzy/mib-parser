@@ -1,34 +1,6 @@
-// actually there are derived types too
-some_type = { builtin_type | defined_type }
-
-module_reference = { identifier ~ "." }
-
-defined_type = { module_reference? ~ identifier ~ value_or_constraint_list? }
-
-value_or_constraint_list = { "placemarker" }
-
-builtin_type = { null_type
-            | boolean_type
-            | real_type
-            | object_identifier_type }
-
-constraint_list = { "(" ~ constraint ~ ("|" ~ constraint)* ~ ")" }
-
-// There are WAY more constraints
-constraint = { size_constraint }
-
-size_constraint = { "SIZE" ~ value_constraint_list }
-
-value_constraint_list = { "(" ~ value_constraint ~ ("|" ~ value_constraint)* ~ ")" }
-
-// Huge simplification here too
-value_constraint = { number_string }
-
-null_type = { "NULL" }
-boolean_type = { "BOOLEAN" }
-real_type = { "REAL" }
-object_identifier_type = { "OBJECT" ~ "IDENTIFIER" }
-sequence_of_type = { "SEQUENCE" ~ constraint_list? ~ "OF" ~ some_type }
+//
+// Some basic tokens
+//
 
 identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "-")* }
 
@@ -43,13 +15,196 @@ quoted_string = ${ "\"" ~ inner ~ "\"" }
     char = { !("\"") ~ ANY | "\"\"" }
     doublequote = { "\"\"" }
 
-// redundant
-// obj_id = { identifier ~ object_identifier_type ~ "::=" ~ "{" ~ identifier ~ number_string ~ "}" }
-// see value assignment... 
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+COMMENT = _{ "--" ~ (!"\n" ~ ANY)* }
 
-// So this may be a bit too generous!
-mib = _{ SOI ~ ANY* ~ EOI }
+//
+//  Module def/import/export productions
+//
 
+main = { SOI ~ module_definition+ ~ EOI }
+
+module_definition = { module_identifier ~ "DEFINITIONS" ~ tag_default?
+                   ~ "::=" ~ "BEGIN" ~ module_body ~ "END" }
+
+module_identifier = { identifier ~ object_identifier_value? }
+
+module_reference = { identifier ~ "." }
+
+tag_default = { ("EXPLICIT" ~ "TAGS") | ("IMPLICIT" ~ "TAGS") }
+
+module_body = { export_list? ~ import_list? ~ assignment_list }
+
+export_list = { "EXPORTS" ~ symbol_list? ~ ";" }
+
+import_list = { "IMPORTS" ~ symbols_from_module* ~ ";" }
+
+symbols_from_module = { symbol_list ~ "FROM" ~ module_identifier }
+
+symbol_list = { symbol ~ ("," ~ symbol)* }
+
+symbol = { identifier | defined_macro_name }
+
+assignment_list = { assignment+ }
+
+assignment = { ( macro_definition ~ ";"? )
+           | ( type_assignment ~ ";"? )
+           | ( value_assignment ~ ";"? ) }
+
+macro_definition = { macro_reference ~ "MACRO" ~ "::=" ~ macro_body }
+
+macro_reference = { identifier | defined_macro_name }
+
+macro_body = { ("BEGIN" ~ macro_body_element* ~ "END")
+          | (module_reference ~ macro_reference) }
+
+macro_body_element = { 
+                   "("
+                 | ")"
+                 | "|"
+                 | "::="
+                 | "INTEGER"
+                 | "REAL"
+                 | "BOOLEAN"
+                 | "NULL"
+                 | "BIT"
+                 | "OCTET"
+                 | "STRING"
+                 | "OBJECT"
+                 | "IDENTIFIER"
+                 | identifier
+                 | quoted_string }
+
+
+//
+//  Type notation productions
+//
+
+type_assignment = { identifier ~ "::=" ~ some_type }
+
+some_type = { builtin_type
+     | defined_type
+     | defined_macro_type }
+
+defined_type = { module_reference?  ~ identifier ~ value_or_constraint_list? }
+
+builtin_type = { null_type
+            | boolean_type
+            | real_type
+            | integer_type
+            | object_identifier_type
+            | string_type
+            | bit_string_type
+            | bits_type
+            | sequence_type
+            | sequence_of_type
+            | set_type
+            | set_of_type
+            | choice_type
+            | enumerated_type
+            | selection_type
+            | tagged_type
+            | any_type }
+
+null_type = { "NULL" }
+
+boolean_type = { "BOOLEAN" }
+
+real_type = { "REAL" }
+
+integer_type = { "INTEGER" ~ value_or_constraint_list? }
+
+object_identifier_type = { "OBJECT" ~ "IDENTIFIER" }
+
+string_type = { "OCTET" ~ "STRING" ~ constraint_list? }
+
+bit_string_type = { "BIT" ~ "STRING" ~ value_or_constraint_list? }
+
+bits_type = { "BITS" ~ value_or_constraint_list? }
+
+sequence_type = { "SEQUENCE" ~ "{" ~ element_type_list? ~ "}" }
+
+sequence_of_type = { "SEQUENCE" ~ constraint_list? ~ "OF" ~ some_type }
+
+set_type = { "SET" ~ "{" ~ element_type_list? ~ "}" }
+
+set_of_type = { "SET" ~ size_constraint? ~ "OF" ~ some_type }
+
+choice_type = { "CHOICE" ~ "{" ~ element_type_list ~ "}" }
+
+enumerated_type = { "ENUMERATED" ~ named_number_list }
+
+selection_type = { identifier ~ "<" ~ some_type }
+
+tagged_type = { tag ~ explicit_or_implicit_tag? ~ some_type }
+
+tag = { "[" ~ class? ~ number_string ~ "]" }
+
+class = { "UNIVERSAL"
+      | "APPLICATION"
+      | "PRIVATE" }
+
+explicit_or_implicit_tag = { "EXPLICIT" | "IMPLICIT" }
+
+any_type = { "ANY" | ("ANY" ~ "DEFINED" ~ "BY" ~ identifier) }
+
+element_type_list = { element_type ~ ("," ~ element_type)* }
+
+element_type = { (identifier? ~ some_type ~ optional_or_default_element?) 
+            | ( identifier? ~ "COMPONENTS" ~ "OF" ~ some_type ) }
+
+optional_or_default_element = { "OPTIONAL" | ("DEFAULT" ~ identifier? ~ value) }
+
+value_or_constraint_list = { named_number_list | constraint_list }
+
+named_number_list = { "{" ~ named_number ~ ("," ~ named_number)* ~ "}" }
+
+named_number = { identifier ~ "(" ~ number ~ ")" }
+
+number = { number_value
+       | binary_value
+       | hex_value
+       | defined_value }
+
+constraint_list = { "(" ~ constraint ~ ("|" ~ constraint)* ~ ")" }
+
+constraint = { value_constraint
+           | size_constraint
+           | alphabet_constraint
+           | contained_type_constraint
+           | inner_type_constraint }
+
+value_constraint_list = { "(" ~ value_constraint ~ ("|" ~ value_constraint)* ~ ")" }
+
+value_constraint = { lower_end_point ~ value_range? }
+
+value_range = { "<"? ~ ".." ~ "<"? ~ upper_end_point }
+
+lower_end_point = { value | "MIN" }
+
+upper_end_point = { value | "MAX" }
+
+size_constraint = { "SIZE" ~ value_constraint_list }
+
+alphabet_constraint = { "FROM" ~ value_constraint_list }
+
+contained_type_constraint = { "INCLUDES" ~ some_type }
+
+inner_type_constraint = { ("WITH" ~ "COMPONENT" ~ value_or_constraint_list)
+                    | ("WITH" ~ "COMPONENTS" ~ components_list ) }
+
+components_list = { ( "{" ~ component_constraint ~ components_list_tail* ~ "}" )
+               | ( "{" ~ "..." ~ components_list_tail+ ~ "}" ) }
+
+components_list_tail = { "," ~ component_constraint? }
+
+component_constraint = { ( identifier ~ component_value_presence? )
+                    | component_value_presence }
+
+component_value_presence = { ( value_or_constraint_list ~ component_presence? )
+                       | component_presence }
+
+component_presence = { "PRESENT" | "ABSENT" | "OPTIONAL" }
 
 //
 // Value notation productions
@@ -68,7 +223,7 @@ builtin_value = { null_value
              | binary_value
              | hex_value
              | string_value
-             | bit_or_objectidentifier_value }
+             | bit_or_object_identifier_value }
 
 null_value = { "NULL" }
 
@@ -84,11 +239,11 @@ hex_value = { hex_string }
 
 string_value = { quoted_string }
 
-bit_or_objectidentifier_value = { name_value_list }
+bit_or_object_identifier_value = { name_value_list }
 
 bit_value = { name_value_list }
 
-objectidentifier_value = { name_value_list }
+object_identifier_value = { name_value_list }
 
 name_value_list = { "{" ~ name_value_component* ~ "}" }
 
@@ -98,5 +253,181 @@ name_or_number = { number_string | identifier | name_and_number }
 
 name_and_number = { identifier ~ "(" ~ (number_string | defined_value ) ~ ")" }
 
-WHITESPACE = _{ " " | "\t" | NEWLINE }
-COMMENT = _{ "--" ~ (!"\n" ~ ANY)* }
+
+//
+// Macro Syntax definitions
+//
+
+defined_macro_type = { snmp_module_identity_macro_type
+                 | snmp_object_identity_macro_type
+                 | snmp_object_type_macro_type
+                 | snmp_notification_type_macro_type
+                 | snmp_trap_type_macro_type
+                 | snmp_textual_convention_macro_type
+                 | snmp_object_group_macro_type
+                 | snmp_notification_group_macro_type
+                 | snmp_module_compliance_macro_type
+                 | snmp_agent_capabilities_macro_type }
+
+defined_macro_name = { "MODULE-IDENTITY"
+                 | "OBJECT-IDENTITY"
+                 | "OBJECT-TYPE"
+                 | "NOTIFICATION-TYPE"
+                 | "TRAP-TYPE"
+                 | "TEXTUAL-CONVENTION"
+                 | "OBJECT-GROUP"
+                 | "NOTIFICATION-GROUP"
+                 | "MODULE-COMPLIANCE"
+                 | "AGENT-CAPABILITIES" }
+
+snmp_module_identity_macro_type = { "MODULE-IDENTITY"
+                              ~ snmp_update_part
+                              ~ snmp_organization_part
+                              ~ snmp_contact_part
+                              ~ snmp_descr_part
+                              ~ snmp_revision_part* }
+
+snmp_object_identity_macro_type = { "OBJECT-IDENTITY"
+                              ~ snmp_status_part
+                              ~ snmp_descr_part
+                              ~ snmp_refer_part? }
+
+snmp_object_type_macro_type = { "OBJECT-TYPE"
+                          ~ snmp_syntax_part
+                          ~ snmp_units_part?
+                          ~ snmp_access_part
+                          ~ snmp_status_part
+                          ~ snmp_descr_part?
+                          ~ snmp_refer_part?
+                          ~ snmp_index_part?
+                          ~ snmp_def_val_part? }
+
+snmp_notification_type_macro_type = { "NOTIFICATION-TYPE"
+                                ~ snmp_objects_part?
+                                ~ snmp_status_part
+                                ~ snmp_descr_part
+                                ~ snmp_refer_part? }
+
+snmp_trap_type_macro_type = { "TRAP-TYPE"
+                        ~ snmp_enterprise_part
+                        ~ snmp_var_part?
+                        ~ snmp_descr_part?
+                        ~ snmp_refer_part? }
+
+snmp_textual_convention_macro_type = { "TEXTUAL-CONVENTION"
+                                 ~ snmp_display_part?
+                                 ~ snmp_status_part
+                                 ~ snmp_descr_part
+                                 ~ snmp_refer_part?
+                                 ~ snmp_syntax_part }
+
+snmp_object_group_macro_type = { "OBJECT-GROUP"
+                           ~ snmp_objects_part
+                           ~ snmp_status_part
+                           ~ snmp_descr_part
+                           ~ snmp_refer_part? }
+
+snmp_notification_group_macro_type = { "NOTIFICATION-GROUP"
+                                 ~ snmp_notifications_part
+                                 ~ snmp_status_part
+                                 ~ snmp_descr_part
+                                 ~ snmp_refer_part? }
+
+snmp_module_compliance_macro_type = { "MODULE-COMPLIANCE"
+                                ~ snmp_status_part
+                                ~ snmp_descr_part
+                                ~ snmp_refer_part?
+                                ~ snmp_module_part+ }
+
+snmp_agent_capabilities_macro_type = { "AGENT-CAPABILITIES"
+                                 ~ snmp_product_release_part
+                                 ~ snmp_status_part
+                                 ~ snmp_descr_part
+                                 ~ snmp_refer_part?
+                                 ~ snmp_module_support_part* }
+
+snmp_update_part = { "LAST-UPDATED" ~ quoted_string }
+
+snmp_organization_part = { "ORGANIZATION" ~ quoted_string }
+
+snmp_contact_part = { "CONTACT-INFO" ~ quoted_string }
+
+snmp_descr_part = { "DESCRIPTION" ~ quoted_string }
+
+snmp_revision_part = { "REVISION" ~ value ~ "DESCRIPTION" ~ quoted_string }
+
+snmp_status_part = { "STATUS" ~ identifier }
+
+snmp_refer_part = { "REFERENCE" ~ quoted_string }
+
+snmp_syntax_part = { "SYNTAX" ~ some_type }
+
+snmp_units_part = { "UNITS" ~ quoted_string }
+
+snmp_access_part = { ("ACCESS" ~ identifier)
+               | ("MAX-ACCESS" ~ identifier)
+               | ("MIN-ACCESS" ~ identifier) }
+
+snmp_index_part = { ("INDEX" ~ "{" ~ index_value_list ~ "}")
+              | ("AUGMENTS" ~ "{" ~ value ~ "}") }
+
+index_value_list = { index_value ~ ("," ~ index_value)* }
+
+index_value = { value
+           | ("IMPLIED" ~ value)
+           | index_type }
+
+index_type = { integer_type
+          | string_type
+          | object_identifier_type }
+
+snmp_def_val_part = { "DEFVAL" ~ "{" ~ value ~ "}" }
+
+snmp_objects_part = { "OBJECTS" ~ "{" ~ value_list ~ "}" }
+
+value_list = { value ~ ("," ~ value)* }
+
+snmp_enterprise_part = { "ENTERPRISE" ~ value }
+
+snmp_var_part = { "VARIABLES" ~ "{" ~ value_list ~ "}" }
+
+snmp_display_part = { "DISPLAY-HINT" ~ quoted_string }
+
+snmp_notifications_part = { "NOTIFICATIONS" ~ "{" ~ value_list ~ "}" }
+
+snmp_module_part = { "MODULE" ~ snmp_module_import?
+                 ~ snmp_mandatory_part?
+                 ~ snmp_compliance_part* }
+
+snmp_module_import = { module_identifier }
+
+snmp_mandatory_part = { "MANDATORY-GROUPS" ~ "{" ~ value_list ~ "}" }
+
+snmp_compliance_part = { compliance_group | compliance_object }
+
+compliance_group = { "GROUP" ~ value ~ snmp_descr_part }
+
+compliance_object = { "OBJECT" ~ value
+                   ~ snmp_syntax_part?
+                   ~ snmp_write_syntax_part?
+                   ~ snmp_access_part?
+                   ~ snmp_descr_part }
+
+snmp_write_syntax_part = { "WRITE-SYNTAX" ~ some_type }
+
+snmp_product_release_part = { "PRODUCT-RELEASE" ~ quoted_string }
+
+snmp_module_support_part = { "SUPPORTS" ~ snmp_module_import
+                        ~ "INCLUDES" ~ "{" ~ value_list ~ "}"
+                        ~ snmp_variation_part* }
+
+snmp_variation_part = { "VARIATION" ~ value
+                    ~ snmp_syntax_part?
+                    ~ snmp_write_syntax_part?
+                    ~ snmp_access_part?
+                    ~ snmp_creation_part?
+                    ~ snmp_def_val_part?
+                    ~ snmp_descr_part }
+
+snmp_creation_part = { "CREATION-REQUIRES" ~ "{" ~ value_list ~ "}" }
+
