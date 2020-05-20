@@ -82,9 +82,7 @@ macro_body_element = {
 
 type_assignment = { identifier ~ "::=" ~ some_type }
 
-some_type = { builtin_type
-     | defined_type
-     | defined_macro_type }
+some_type = { defined_macro_type | builtin_type | defined_type }
 
 defined_type = { module_reference?  ~ identifier ~ value_or_constraint_list? }
 
@@ -211,6 +209,8 @@ component_presence = { "PRESENT" | "ABSENT" | "OPTIONAL" }
 //
 
 value_assignment = { identifier ~ some_type ~ "::=" ~ value }
+
+x_identified_type = { identifier ~ some_type  }
 
 value = { builtin_value | defined_value }
 

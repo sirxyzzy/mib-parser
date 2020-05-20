@@ -185,6 +185,7 @@ dependencies = [
  "clap",
  "indextree",
  "pest",
+ "pest_consume",
  "pest_derive",
  "regex",
 ]
@@ -208,6 +209,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10f4872ae94d7b90ae48754df22fd42ad52ce740b8f370b03da4835417403e53"
 dependencies = [
  "ucd-trie",
+]
+
+[[package]]
+name = "pest_consume"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25f219b98d6adeb806008406459357c7692f413e2dd862219e262858d70a4108"
+dependencies = [
+ "pest",
+ "pest_consume_macros",
+ "pest_derive",
+ "proc-macro-hack",
+]
+
+[[package]]
+name = "pest_consume_macros"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4211c86227964037a5e04d55650bfd4392e7072539fa8cbc5f9ff47e77c22b4e"
+dependencies = [
+ "proc-macro-hack",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -269,6 +294,12 @@ dependencies = [
  "syn-mid",
  "version_check",
 ]
+
+[[package]]
+name = "proc-macro-hack"
+version = "0.5.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d659fe7c6d27f25e9d80a1a094c223f5246f6a6596453e09d7229bf42750b63"
 
 [[package]]
 name = "proc-macro2"
