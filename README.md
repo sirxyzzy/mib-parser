@@ -8,4 +8,4 @@ I also have to credit a Java based MIB parser, Mibble, see https://www.mibble.or
 from the Mibble grammar file.
 
 Right now this project just parses a MIB file, but doesn't generate anything from the parse tree, the next step
-for this project is to map the parse tree to a semantic data structures.
+for this project is to map the parse tree to a semantic data structure.
