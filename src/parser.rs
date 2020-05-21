@@ -62,15 +62,14 @@ fn get_identifier<R: RuleType>(pair: Pair<R>) -> String {
 
 #[allow(dead_code)]
 fn print_pair<R: RuleType>(pair: Pair<R>) {
-    println!("{:?} '{}'", pair.as_rule(), pair.as_str());
+    println!("<<{:?}>> '{}'", pair.as_rule(), pair.as_str());
     print_pairs(pair.into_inner(), 1)
 }
 
 fn print_pairs<R: RuleType>(pairs: Pairs<R>, level: usize) {
-    let indent = " ".repeat(level*4);
     for pair in pairs {
         // A pair is a combination of the rule which matched and a span of input
-        println!("{}{:?} '{}'", indent, pair.as_rule(), pair.as_str());
+        println!("{:indent$}<<{:?}>> '{}'", "", pair.as_rule(), pair.as_str(), indent=level*2);
 
         // A pair can be converted to an iterator of the tokens which make it up:
         print_pairs(pair.into_inner(), level+1);
@@ -250,8 +249,7 @@ mod tests {
         OBJECT-GROUP, MODULE-COMPLIANCE
                     FROM SNMPv2-CONF
         enterprises, MODULE-IDENTITY, OBJECT-TYPE, Integer32
-                    FROM SNMPv2-SMI;
-        "#;
+                    FROM SNMPv2-SMI;"#;
 
         let pair = parse(Rule::import_list, input);
         print_pair(pair)
@@ -297,8 +295,7 @@ mod tests {
             REVISION     "201309110000Z"
             DESCRIPTION
                 "Second draft."
-            ::= { synology 2 }
-        "#;
+            ::= { synology 2 }"#;
 
         let pair = parse(Rule::module_body, input);
         print_pair(pair)
