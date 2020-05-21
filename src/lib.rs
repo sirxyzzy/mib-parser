@@ -7,6 +7,7 @@ use std::fs;
 
 mod parser;
 
+/// Parse a single file
 pub fn parse_file<P: AsRef<Path>>(mib_file: &P) -> Result<(), Box<dyn std::error::Error>> {
     let mib_string = fs::read_to_string(mib_file)?;
     parser::parse_mib(&mib_string)

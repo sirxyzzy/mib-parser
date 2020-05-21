@@ -11,7 +11,10 @@ use clap::Clap;
 struct Opts {
     /// Sets a custom config file. Could have been an Option<T> with no default too
     #[clap(short, long)]
-    mib: String
+    mib: String,
+
+    #[clap(short,long)]
+    verbose: bool
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -19,9 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let opts: Opts = Opts::parse();
 
-    let mib_path = opts.mib;
-
-    let path = Path::new(&mib_path);
+    let path = Path::new(&opts.mib);
 
     if path.is_dir() {
         // Batch load of MIBs
@@ -38,11 +39,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         match parse_file(&path) {
                             Ok(_) => {
                                 parsed_ok += 1;
-                                println!("Parsed {}", path.display());
+                                if opts.verbose {
+                                    println!("Parsed {}", path.display());
+                                }
                             },
-                            Err(_) => {
+                            Err(e) => {
                                 parse_failed += 1;
                                 println!("Parsed failed for {}", path.display());
+                                if opts.verbose {
+                                    println!("{}", e)
+                                }
                             }
                         }
                     }
