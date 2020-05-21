@@ -2,7 +2,6 @@ use pest::Parser;
 use pest::iterators::{Pairs,Pair};
 use regex::Regex;
 use indextree::Arena;
-use std::time::Instant;
 
 #[allow(dead_code)]
 #[derive(Parser)]
@@ -16,18 +15,10 @@ pub struct ObjectIdentifierNode {
     pub name: String
 }
 
-pub fn parse_mib(mib_text: &str) {
-    println!("Parsing mib");
-    let now = Instant::now();
+pub fn parse_mib(mib_text: &str) -> Result<(), Box<dyn std::error::Error>> {
     let _arena = &mut Arena::<ObjectIdentifierNode>::new();
-    let result = MibParser::parse(Rule::main, mib_text);
-
-    match result {
-        Ok(_) => println!("Parsed mib of size {} in {}ms", mib_text.len(), now.elapsed().as_millis()),
-        Err(e) => println!("Parse failed: {}", e)
-    }
-    // print_pairs(pairs, 0);
-        
+    MibParser::parse(Rule::main, mib_text)?;
+    Ok(())
 }
 
 #[allow(dead_code)]
