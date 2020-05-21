@@ -1,6 +1,5 @@
 use pest::Parser;
 use pest::iterators::{Pairs,Pair};
-use pest::RuleType;
 use regex::Regex;
 use indextree::Arena;
 
@@ -24,7 +23,7 @@ pub fn parse_mib(mib_text: &str) {
 }
 
 #[allow(dead_code)]
-fn get_quoted_string<R: RuleType>(pair: Pair<R>) -> String {
+fn get_quoted_string(pair: Pair<Rule>) -> String {
     let raw = pair.into_inner().as_str().to_owned();
 
     // Replace double quotes with single
@@ -37,36 +36,36 @@ fn get_quoted_string<R: RuleType>(pair: Pair<R>) -> String {
 }
 
 #[allow(dead_code)]
-fn get_number<R: RuleType>(pair: Pair<R>) -> u64 {
+fn get_number(pair: Pair<Rule>) -> u64 {
     pair.as_str().parse::<u64>().unwrap()
 }
 
 #[allow(dead_code)]
-fn get_hex_number<R: RuleType>(pair: Pair<R>) -> u64 {
+fn get_hex_number(pair: Pair<Rule>) -> u64 {
     let s = pair.as_str();
     let len = s.len();
     u64::from_str_radix(&s[..len-2], 16).unwrap()
 }
 
 #[allow(dead_code)]
-fn get_bin_number<R: RuleType>(pair: Pair<R>) -> u64 {
+fn get_bin_number(pair: Pair<Rule>) -> u64 {
     let s = pair.as_str();
     let len = s.len();
     u64::from_str_radix(&s[..len-2], 2).unwrap()
 }
 
 #[allow(dead_code)]
-fn get_identifier<R: RuleType>(pair: Pair<R>) -> String {
+fn get_identifier(pair: Pair<Rule>) -> String {
     pair.as_str().to_owned()
 }
 
 #[allow(dead_code)]
-fn print_pair<R: RuleType>(pair: Pair<R>) {
+fn print_pair(pair: Pair<Rule>) {
     println!("<<{:?}>> '{}'", pair.as_rule(), pair.as_str());
     print_pairs(pair.into_inner(), 1)
 }
 
-fn print_pairs<R: RuleType>(pairs: Pairs<R>, level: usize) {
+fn print_pairs(pairs: Pairs<Rule>, level: usize) {
     for pair in pairs {
         // A pair is a combination of the rule which matched and a span of input
         println!("{:indent$}<<{:?}>> '{}'", "", pair.as_rule(), pair.as_str(), indent=level*2);
@@ -79,7 +78,7 @@ fn print_pairs<R: RuleType>(pairs: Pairs<R>, level: usize) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::Rule;
+    use super::Rule; // Why doesn't the wildcard, super::* pick this up?
     use pest::Parser;
 
     #[test]
