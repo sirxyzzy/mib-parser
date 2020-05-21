@@ -13,5 +13,6 @@ pest = "2.0"
 pest_derive = "2.0"
 pest_consume = "1.0"
 indextree = "4.0"
+walkdir = "2"
 
 

@@ -6,9 +6,9 @@ identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "-")* }
 
 number_string = @{ ASCII_DIGIT+ }
 
-binary_string = ${ ('0'..'1')+ ~ "'" ~ ^"b" }
+binary_string = ${ "'" ~ ('0'..'1')* ~ "'" ~ ^"b" }
 
-hex_string = ${ ASCII_HEX_DIGIT+ ~ "'" ~ ^"h" }
+hex_string = ${ "'" ~ ASCII_HEX_DIGIT* ~ "'" ~ ^"h" }
 
 quoted_string = ${ "\"" ~ inner ~ "\"" }
     inner = @{ char* }
@@ -146,7 +146,7 @@ explicit_or_implicit_tag = { "EXPLICIT" | "IMPLICIT" }
 
 any_type = { "ANY" | ("ANY" ~ "DEFINED" ~ "BY" ~ identifier) }
 
-element_type_list = { element_type ~ ("," ~ element_type)* }
+element_type_list = { element_type ~ ("," ~ element_type)* ~ ","? }
 
 element_type = { (identifier? ~ some_type ~ optional_or_default_element?) 
             | ( identifier? ~ "COMPONENTS" ~ "OF" ~ some_type ) }
@@ -166,17 +166,17 @@ number = { number_value
 
 constraint_list = { "(" ~ constraint ~ ("|" ~ constraint)* ~ ")" }
 
-constraint = { value_constraint
-           | size_constraint
+constraint = { size_constraint
+           | value_constraint           
            | alphabet_constraint
            | contained_type_constraint
            | inner_type_constraint }
 
 value_constraint_list = { "(" ~ value_constraint ~ ("|" ~ value_constraint)* ~ ")" }
 
-value_constraint = { lower_end_point ~ value_range? }
+value_constraint = { value_range | lower_end_point }
 
-value_range = { "<"? ~ ".." ~ "<"? ~ upper_end_point }
+value_range = { lower_end_point ~ "<"? ~ ".." ~ "<"? ~ upper_end_point }
 
 lower_end_point = { value | "MIN" }
 
@@ -209,8 +209,6 @@ component_presence = { "PRESENT" | "ABSENT" | "OPTIONAL" }
 //
 
 value_assignment = { identifier ~ some_type ~ "::=" ~ value }
-
-x_identified_type = { identifier ~ some_type  }
 
 value = { builtin_value | defined_value }
 
@@ -249,7 +247,7 @@ name_value_list = { "{" ~ name_value_component* ~ "}" }
 
 name_value_component = { ","? ~ name_or_number }
 
-name_or_number = { number_string | identifier | name_and_number } 
+name_or_number = { name_and_number | number_string | identifier } 
 
 name_and_number = { identifier ~ "(" ~ (number_string | defined_value ) ~ ")" }
 
@@ -373,9 +371,7 @@ snmp_index_part = { ("INDEX" ~ "{" ~ index_value_list ~ "}")
 
 index_value_list = { index_value ~ ("," ~ index_value)* }
 
-index_value = { value
-           | ("IMPLIED" ~ value)
-           | index_type }
+index_value = { ("IMPLIED" ~ value) | index_type | value }
 
 index_type = { integer_type
           | string_type

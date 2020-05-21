@@ -1,5 +1,7 @@
 extern crate mib_parser;
 use mib_parser::parse_file;
+use std::path::Path;
+use walkdir::WalkDir;
 
 use clap::Clap;
 /// Parse a MIB file
@@ -11,15 +13,33 @@ struct Opts {
     mib: String
 }
 
-
 fn main() {
     let opts: Opts = Opts::parse();
 
-    let mib_file = opts.mib;
+    let mib_path = opts.mib;
 
-    println!("Parsing {}", mib_file);
+    let path = Path::new(&mib_path);
 
-    parse_file(&mib_file);  
+    if path.is_dir() {
+        // Batch load of MIBs
+        let extensions = vec!["txt", "mib"];
+         for path in WalkDir::new(path).into_iter()
+                 .filter_map(|e| e.ok())
+                 .filter(|e| e.file_type().is_file())
+                 .map(|e| e.into_path()) {
+            if let Some(ext) = path.extension() {
+                if let Some(sext) = ext.to_str() {
+                    if extensions.contains(&sext.to_lowercase().as_str()) {
+
+                        println!("Found {}", path.display());
+                        parse_file(path); 
+                    }
+                }
+            }
+        }
+    } else {
+        println!("Parsing {}", path.display());
+        parse_file(path); 
+    }
 }
-
 

@@ -20,9 +20,14 @@ pub fn parse_mib(mib_text: &str) {
     println!("Parsing mib");
     let now = Instant::now();
     let _arena = &mut Arena::<ObjectIdentifierNode>::new();
-    let pairs = MibParser::parse(Rule::main, mib_text).unwrap();
-    print_pairs(pairs, 0);
-    println!("Parsed mib of size {} bytes in {}ms", mib_text.len(), now.elapsed().as_millis());    
+    let result = MibParser::parse(Rule::main, mib_text);
+
+    match result {
+        Ok(_) => println!("Parsed mib of size {} in {}ms", mib_text.len(), now.elapsed().as_millis()),
+        Err(e) => println!("Parse failed: {}", e)
+    }
+    // print_pairs(pairs, 0);
+        
 }
 
 #[allow(dead_code)]
@@ -197,27 +202,9 @@ mod tests {
     }
 
     #[test]
-    fn x_identified_type_1() {
-        let input = r#"synoDisk MODULE-IDENTITY
-            LAST-UPDATED "201309110000Z"
-            ORGANIZATION "www.synology.com"
-            CONTACT-INFO
-                 "postal:   Jay Pan
-                  email:    jaypan@synology.com"
-            DESCRIPTION
-                "Characteristics of the disk information"
-            REVISION     "201309110000Z"
-            DESCRIPTION
-                "Second draft.""#;
-
-        let pair = parse(Rule::x_identified_type, input);
-        print_pair(pair)        
-    }
-
-    #[test]
-    fn x_identified_type_2() {
-        let input = "synoDisk BOOLEAN";
-        let pair = parse(Rule::x_identified_type, input);
+    fn constraint_list() {
+        let input = "( SIZE (0..63) )";
+        let pair = parse(Rule::constraint_list, input);
         print_pair(pair)        
     }
 
@@ -299,7 +286,11 @@ mod tests {
     fn parse(rule: Rule, input: &str) -> Pair<Rule> {
         let pair = MibParser::parse(rule, input).unwrap().next().unwrap();
         assert_eq!(pair.as_rule(), rule);
-        assert_eq!(pair.as_str(), input, "Expected rule({:?}) to fully consume '{}'", rule, input);
+        if pair.as_str() != input {
+            println!("Expected rule({:?}) to fully consume '{}'", rule, input);
+            print_pair(pair);
+            panic!("Failed test");
+        }
         pair
     }
 
