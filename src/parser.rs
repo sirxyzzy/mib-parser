@@ -2,6 +2,7 @@ use pest::Parser;
 use pest::iterators::{Pairs,Pair};
 use regex::Regex;
 use indextree::Arena;
+use std::time::Instant;
 
 #[allow(dead_code)]
 #[derive(Parser)]
@@ -16,10 +17,12 @@ pub struct ObjectIdentifierNode {
 }
 
 pub fn parse_mib(mib_text: &str) {
-    println!("Parsing mib of size {}", mib_text.len());
+    println!("Parsing mib");
+    let now = Instant::now();
     let _arena = &mut Arena::<ObjectIdentifierNode>::new();
     let pairs = MibParser::parse(Rule::main, mib_text).unwrap();
-    print_pairs(pairs, 0)
+    print_pairs(pairs, 0);
+    println!("Parsed mib of size {} bytes in {}ms", mib_text.len(), now.elapsed().as_millis());    
 }
 
 #[allow(dead_code)]
@@ -179,8 +182,7 @@ mod tests {
             "Characteristics of the disk information"
         REVISION     "201309110000Z"
         DESCRIPTION
-            "Second draft."
-        "#;
+            "Second draft.""#;
 
         let pair = parse(Rule::some_type, input);
         print_pair(pair)
@@ -196,8 +198,7 @@ mod tests {
 
     #[test]
     fn x_identified_type_1() {
-        let input = r#"
-        synoDisk MODULE-IDENTITY
+        let input = r#"synoDisk MODULE-IDENTITY
             LAST-UPDATED "201309110000Z"
             ORGANIZATION "www.synology.com"
             CONTACT-INFO
@@ -207,8 +208,7 @@ mod tests {
                 "Characteristics of the disk information"
             REVISION     "201309110000Z"
             DESCRIPTION
-                "Second draft."
-        "#;
+                "Second draft.""#;
 
         let pair = parse(Rule::x_identified_type, input);
         print_pair(pair)        
@@ -223,8 +223,7 @@ mod tests {
 
     #[test]
     fn value_assignment() {
-        let input = r#"
-        synoDisk MODULE-IDENTITY
+        let input = r#"synoDisk MODULE-IDENTITY
             LAST-UPDATED "201309110000Z"
             ORGANIZATION "www.synology.com"
             CONTACT-INFO
@@ -235,8 +234,7 @@ mod tests {
             REVISION     "201309110000Z"
             DESCRIPTION
                 "Second draft."
-            ::= { synology 2 }
-        "#;
+            ::= { synology 2 }"#;
 
         let pair = parse(Rule::value_assignment, input);
         print_pair(pair)        
@@ -256,8 +254,7 @@ mod tests {
 
     #[test]
     fn xassignment() {
-        let input = r#"
-        synoDisk MODULE-IDENTITY
+        let input = r#"synoDisk MODULE-IDENTITY
             LAST-UPDATED "201309110000Z"
             ORGANIZATION "www.synology.com"
             CONTACT-INFO
@@ -268,8 +265,7 @@ mod tests {
             REVISION     "201309110000Z"
             DESCRIPTION
                 "Second draft."
-            ::= { synology 2 }
-        "#;
+            ::= { synology 2 }"#;
 
         let pair = parse(Rule::value_assignment, input);
         print_pair(pair)        

@@ -16,7 +16,7 @@ quoted_string = ${ "\"" ~ inner ~ "\"" }
     doublequote = { "\"\"" }
 
 WHITESPACE = _{ " " | "\t" | NEWLINE }
-COMMENT = _{ "--" ~ (!"\n" ~ ANY)* }
+COMMENT = _{ "--" ~ (!NEWLINE ~ ANY)* }
 
 //
 //  Module def/import/export productions
