@@ -295,13 +295,10 @@ mod tests {
 
     #[test]
     fn snmp_module_part() {
-        let input = r#"MODULE -- this module
-        
+        let input = r#"MODULE -- this module       
               GROUP rmonEtherStatsGroup
                   DESCRIPTION
-                      "The RMON Ethernet Statistics Group is optional."
-            
-        "#;
+                      "The RMON Ethernet Statistics Group is optional.""#;
         let pair = parse(Rule::snmp_module_part, input);
         print_pair(pair)
     }
