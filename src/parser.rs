@@ -79,7 +79,6 @@ fn print_pairs(pairs: Pairs<Rule>, level: usize) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::Rule; // Why doesn't the wildcard, super::* pick this up?
     use pest::Parser;
 
     #[test]
@@ -169,7 +168,7 @@ mod tests {
     }
 
     #[test]
-    fn x_some_type() {
+    fn some_type() {
         let input = r#"MODULE-IDENTITY
         LAST-UPDATED "201309110000Z"
         ORGANIZATION "www.synology.com"
