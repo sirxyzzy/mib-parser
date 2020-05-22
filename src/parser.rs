@@ -36,7 +36,9 @@ fn get_quoted_string(pair: Pair<Rule>) -> String {
 
 #[allow(dead_code)]
 fn get_number(pair: Pair<Rule>) -> u64 {
-    pair.as_str().parse::<u64>().unwrap()
+    let number = pair.as_str().parse::<u64>().unwrap();
+    trace!("Got a number = {}", number);
+    number
 }
 
 #[allow(dead_code)]
@@ -44,7 +46,9 @@ fn get_hex_number(pair: Pair<Rule>) -> u64 {
     let s = pair.as_str();
     let len = s.len();
     // skip prefix and suffix
-    u64::from_str_radix(&s[1..len-2], 16).unwrap()
+    let number = u64::from_str_radix(&s[1..len-2], 16).unwrap();
+    trace!("Got a hex number = {}", number);
+    number
 }
 
 #[allow(dead_code)]
@@ -52,12 +56,16 @@ fn get_bin_number(pair: Pair<Rule>) -> u64 {
     let s = pair.as_str();
     let len = s.len();
     // skip prefix and suffix
-    u64::from_str_radix(&s[1..len-2], 2).unwrap()
+    let number = u64::from_str_radix(&s[1..len-2], 2).unwrap();
+    trace!("Got a binary number = {}", number);
+    number
 }
 
 #[allow(dead_code)]
 fn get_identifier(pair: Pair<Rule>) -> String {
-    pair.as_str().to_owned()
+    let identifier = pair.as_str().to_owned();
+    trace!("Got an identifier = {}", identifier);
+    identifier
 }
 
 #[allow(dead_code)]
