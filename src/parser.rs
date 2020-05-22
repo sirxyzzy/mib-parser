@@ -43,14 +43,16 @@ fn get_number(pair: Pair<Rule>) -> u64 {
 fn get_hex_number(pair: Pair<Rule>) -> u64 {
     let s = pair.as_str();
     let len = s.len();
-    u64::from_str_radix(&s[..len-2], 16).unwrap()
+    // skip prefix and suffix
+    u64::from_str_radix(&s[1..len-2], 16).unwrap()
 }
 
 #[allow(dead_code)]
 fn get_bin_number(pair: Pair<Rule>) -> u64 {
     let s = pair.as_str();
     let len = s.len();
-    u64::from_str_radix(&s[..len-2], 2).unwrap()
+    // skip prefix and suffix
+    u64::from_str_radix(&s[1..len-2], 2).unwrap()
 }
 
 #[allow(dead_code)]
@@ -114,13 +116,13 @@ mod tests {
 
     #[test]
     fn binary_string() {
-        let result = get_bin_number(parse(Rule::binary_string, "11110000'b"));
+        let result = get_bin_number(parse(Rule::binary_string, "'11110000'b"));
         assert_eq!(result, 0b11110000);
     }
 
     #[test]
     fn hex_string() {
-        let result = get_hex_number(parse(Rule::hex_string, "DEADBEEF'H"));
+        let result = get_hex_number(parse(Rule::hex_string, "'DEADBEEF'H"));
         assert_eq!(result, 0xDEADBEEF);
     }
 
