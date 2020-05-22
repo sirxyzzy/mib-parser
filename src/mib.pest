@@ -26,8 +26,10 @@ quoted_string = ${ "\"" ~ inner ~ "\"" }
     char = { !("\"") ~ ANY | "\"\"" }
     doublequote = { "\"\"" }
 
-WHITESPACE = _{ " " | "\t" | NEWLINE }
+WHITESPACE = _{ " " | "\t"  | "\0c" | "\x0b" | "\x17" | "\x18" | "\x19" | "\x1a" | NEWLINE }
 COMMENT = _{ "--" ~ (!NEWLINE ~ ANY)* }
+
+
 
 //
 //  Module def/import/export productions
