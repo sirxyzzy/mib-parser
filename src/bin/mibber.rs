@@ -58,7 +58,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("{} files parsed, {} files failed to parse in {}ms", parsed_ok, parse_failed, now.elapsed().as_millis());
     } else {
         println!("Parsing {}", path.display());
-        parse_file(&path)?;
+        if let Err(e) = parse_file(&path) {
+            println!("Parse failed {}", e)
+        }
         println!("Took {}ms", now.elapsed().as_millis()); 
     }
 

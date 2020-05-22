@@ -2,7 +2,13 @@
 // Some basic tokens
 //
 
-identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "-")* }
+identifier = @{ !keywords ~ ASCII_ALPHA ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "-")* }
+
+// Don't match certain keywords as identifiers, this is a bit of a hack, but otherwise
+// we find identifiers swallowing things needed to disambiguate the grammar
+// I suspect I wouldn't need this list were I to dispallow MOST usages of indentifiers
+// which start with upcase
+keywords = @{ "BEGIN" | "END" | "GROUP" | "OBJECTS" | "STATUS" | "DESCRIPTION" }
 
 number_string = @{ ASCII_DIGIT+ }
 
@@ -57,7 +63,7 @@ macro_reference = { identifier | defined_macro_name }
 
 macro_body = { ("BEGIN" ~ macro_body_element* ~ "END")
           | (module_reference ~ macro_reference) }
-
+ 
 macro_body_element = { 
                    "("
                  | ")"
@@ -182,7 +188,8 @@ lower_end_point = { value | "MIN" }
 
 upper_end_point = { value | "MAX" }
 
-size_constraint = { "SIZE" ~ value_constraint_list }
+// This seems non-compliant, SIZE should always be upcase
+size_constraint = { ("SIZE" | "size") ~ value_constraint_list }
 
 alphabet_constraint = { "FROM" ~ value_constraint_list }
 

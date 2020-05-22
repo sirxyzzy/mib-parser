@@ -233,7 +233,7 @@ mod tests {
     }
 
     #[test]
-    fn xassignment() {
+    fn assignment() {
         let input = r#"synoDisk MODULE-IDENTITY
             LAST-UPDATED "201309110000Z"
             ORGANIZATION "www.synology.com"
@@ -276,15 +276,56 @@ mod tests {
         print_pair(pair)
     }
 
+    #[test]
+    fn value_test1() {
+        // A very simple value, for example, used in groups
+        let input = "rmonEtherStatsGroup";
+        let pair = parse(Rule::value, input);
+        print_pair(pair)
+    }
+
+    #[test]
+    fn compliance_group() {
+        let input = r#"GROUP rmonEtherStatsGroup
+        DESCRIPTION
+            "The RMON Ethernet Statistics Group is optional.""#;
+        let pair = parse(Rule::compliance_group, input);
+        print_pair(pair)
+    }
+
+    #[test]
+    fn snmp_module_part() {
+        let input = r#"MODULE -- this module
+        
+              GROUP rmonEtherStatsGroup
+                  DESCRIPTION
+                      "The RMON Ethernet Statistics Group is optional."
+            
+        "#;
+        let pair = parse(Rule::snmp_module_part, input);
+        print_pair(pair)
+    }
+
+    //
+    // helpers
+    //
+
     fn parse(rule: Rule, input: &str) -> Pair<Rule> {
-        let pair = MibParser::parse(rule, input).unwrap().next().unwrap();
-        assert_eq!(pair.as_rule(), rule);
-        if pair.as_str() != input {
-            println!("Expected rule({:?}) to fully consume '{}'", rule, input);
-            print_pair(pair);
-            panic!("Failed test");
+        let result = MibParser::parse(rule, input);
+
+        match result {
+            Err(e) => panic!("Failed parse: {}", e),
+            Ok(mut pairs) => {
+                let pair = pairs.next().unwrap();
+                assert_eq!(pair.as_rule(), rule);
+                if pair.as_str() != input {
+                    println!("Expected rule({:?}) to fully consume '{}'", rule, input);
+                    print_pair(pair);
+                    panic!("Failed test");
+                }
+                pair
+            }
         }
-        pair
     }
 
     fn parse_fail(rule: Rule, input: &str) {
