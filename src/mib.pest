@@ -2,13 +2,18 @@
 // Some basic tokens
 //
 
+// Technically we should distinguish between identifiers starting with lowcase
+// and those starting upper case, but that has proven to be very difficult
+// to gwet right, as a a result, we need to say "not a keyword" to prevent
+// identifiers creating a lot of ambiguity in the grammar
 identifier = @{ !keywords ~ ASCII_ALPHA ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "-")* }
 
 // Don't match certain keywords as identifiers, this is a bit of a hack, but otherwise
 // we find identifiers swallowing things needed to disambiguate the grammar
 // I suspect I wouldn't need this list were I to dispallow MOST usages of indentifiers
-// which start with upcase
-keywords = @{ "BEGIN" | "END" | "GROUP" | "OBJECTS" | "STATUS" | "DESCRIPTION" }
+// which start with upcase. I tried extending this list to a lot more keywords, but
+// it gave "even more fail" tm
+keywords = @{ "BEGIN" | "END" | "GROUP" }
 
 number_string = @{ ASCII_DIGIT+ }
 
@@ -28,7 +33,10 @@ COMMENT = _{ "--" ~ (!NEWLINE ~ ANY)* }
 //  Module def/import/export productions
 //
 
-main = { SOI ~ module_definition+ ~ EOI }
+// I have a few files that start like this!
+garbage = _{ "RFC1213-MIB MIB Module Definition File--" }
+
+main = { SOI ~ garbage? ~ module_definition+ ~ EOI }
 
 module_definition = { module_identifier ~ "DEFINITIONS" ~ tag_default?
                    ~ "::=" ~ "BEGIN" ~ module_body ~ "END" }
