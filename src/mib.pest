@@ -19,15 +19,13 @@ binary_string = ${ "'" ~ ('0'..'1')* ~ "'" ~ ^"b" }
 
 hex_string = ${ "'" ~ ASCII_HEX_DIGIT* ~ "'" ~ ^"h" }
 
-quoted_string = ${ "\"" ~ inner ~ "\"" }
-    inner = @{ char* }
-    char = { !("\"") ~ ANY | "\"\"" }
+quoted_string = ${ "\"" ~ inner_string ~ "\"" }
+    inner_string = @{ inner_char* }
+    inner_char = { !("\"") ~ ANY | "\"\"" }
     doublequote = { "\"\"" }
 
 WHITESPACE = _{ " " | "\t"  | "\0c" | "\x0b" | "\x17" | "\x18" | "\x19" | "\x1a" | NEWLINE }
 COMMENT = _{ "--" ~ (!NEWLINE ~ ANY)* }
-
-
 
 //
 //  Module def/import/export productions
@@ -36,7 +34,7 @@ COMMENT = _{ "--" ~ (!NEWLINE ~ ANY)* }
 // I have a few files that start like this!
 garbage = _{ "RFC1213-MIB MIB Module Definition File--" }
 
-main = { SOI ~ garbage? ~ module_definition+ ~ EOI }
+mib = { SOI ~ garbage? ~ module_definition+ ~ EOI }
 
 module_definition = { module_identifier ~ "DEFINITIONS" ~ tag_default?
                    ~ "::=" ~ "BEGIN" ~ module_body ~ "END" }

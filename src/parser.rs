@@ -1,5 +1,5 @@
-use pest::Parser;
-use pest::iterators::{Pairs,Pair};
+use pest_consume::Parser;
+use pest_consume::match_nodes;
 use regex::Regex;
 use indextree::Arena;
 
@@ -8,6 +8,11 @@ use indextree::Arena;
 #[grammar = "mib.pest"] // relative to src
 struct MibParser;
 
+use pest_consume::Error;
+type Result<T> = std::result::Result<T, Error<Rule>>;
+type Node<'i> = pest_consume::Node<'i, Rule, ()>;
+type Nodes<'i> = pest_consume::Nodes<'i, Rule, ()>;
+
 #[allow(dead_code)]
 /// When a MIB is loaded, the parsed information ends up in a tree of these
 pub struct ObjectIdentifierNode {
@@ -15,83 +20,123 @@ pub struct ObjectIdentifierNode {
     pub name: String
 }
 
-pub fn parse_mib(mib_text: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn parse_mib(mib_text: &str) -> Result<()> {
     let _arena = &mut Arena::<ObjectIdentifierNode>::new();
-    MibParser::parse(Rule::main, mib_text)?;
+    let nodes = MibParser::parse(Rule::mib, mib_text)?;
+
+    let main_node = nodes.single()?;
+
+    if log::log_enabled!(log::Level::Trace) {
+        print_node(main_node.clone());
+    }
+
+    MibParser::mib(main_node)?;
+
     Ok(())
 }
 
-#[allow(dead_code)]
-fn get_quoted_string(pair: Pair<Rule>) -> String {
-    let raw = pair.into_inner().as_str().to_owned();
+// This is the other half of the parser, using pest_consume.
+#[pest_consume::parser]
+impl MibParser {
+    fn EOI(_node: Node) -> Result<()> {
+        Ok(())
+    }
 
-    // Replace double quotes with single
-    let raw = raw.replace("\"\"", "\"");
+    fn mib(node: Node) -> Result<usize> {
+        // Checks that the children all match the rule `field`, and captures
+        // the parsed children in an iterator. `fds` implements
+        // `Iterator<Item=f64>` here.
+        Ok(match_nodes!(node.into_children();
+            [module_definition(defs)..] => defs.len(),
+        ))
+    }
 
-    // Squelch newlines surrounded by spaces or tabs
-    let re = Regex::new(r" *\r?\n *").unwrap();
+    fn module_definition(node: Node) -> Result<String> {
+        Ok(match_nodes!(node.into_children();
+            [module_identifier(mi)] => mi.to_string(),
+        ))
+    }
 
-    re.replace_all(raw.as_str(), "\n").to_string()
+    fn module_identifier(node: Node) -> Result<String> {
+        Ok(match_nodes!(node.into_children();
+            [identifier(mi)] => mi.to_string(),
+        ))
+    }
+
+    fn identifier(node: Node) -> Result<String> {
+        Ok(node.as_str().to_owned())
+    }
+
+    fn quoted_string(node: Node) -> Result<String> {
+        Ok(match_nodes!(node.into_children();
+            [inner_string(inner)] => inner,
+        ))
+    }
+
+    fn inner_string(node: Node) -> Result<String> {
+        let raw = node.as_str().to_owned();
+
+        // Replace double quotes with single
+        let raw = raw.replace("\"\"", "\"");
+
+        // Squelch newlines surrounded by spaces or tabs
+        let re = Regex::new(r" *\r?\n *").unwrap();
+
+        Ok(re.replace_all(raw.as_str(), "\n").to_string())
+    }
+
+    fn number_string(node: Node) -> Result<u64> {
+        node.as_str().parse::<u64>().map_err(|e| node.error(e))
+    }
+
+    fn hex_string(node: Node) -> Result<u64> {
+        let s = node.as_str();
+        let len = s.len();
+        // skip prefix and suffix
+        u64::from_str_radix(&s[1..len-2], 16).map_err(|e| node.error(e))
+    }
+
+    fn binary_string(node: Node) -> Result<u64> {
+        let s = node.as_str();
+        let len = s.len();
+        // skip prefix and suffix
+        u64::from_str_radix(&s[1..len-2], 2).map_err(|e| node.error(e))
+    }
 }
 
 #[allow(dead_code)]
-fn get_number(pair: Pair<Rule>) -> u64 {
-    let number = pair.as_str().parse::<u64>().unwrap();
-    trace!("Got a number = {}", number);
-    number
+fn print_node(node: Node) {
+    print_single_node(&node);
+    print_nodes(node.children(), 1)
 }
 
-#[allow(dead_code)]
-fn get_hex_number(pair: Pair<Rule>) -> u64 {
-    let s = pair.as_str();
-    let len = s.len();
-    // skip prefix and suffix
-    let number = u64::from_str_radix(&s[1..len-2], 16).unwrap();
-    trace!("Got a hex number = {}", number);
-    number
+fn print_nodes(nodes: Nodes, level: usize) {
+    for node in nodes {
+        // A node is a combination of the rule which matched and a span of input
+        print!("{:indent$}", "", indent=level*2);
+        print_single_node(&node);
+
+        // A node can be converted to an iterator of the tokens which make it up:
+        print_nodes(node.children(), level+1);
+    }
 }
 
-#[allow(dead_code)]
-fn get_bin_number(pair: Pair<Rule>) -> u64 {
-    let s = pair.as_str();
-    let len = s.len();
-    // skip prefix and suffix
-    let number = u64::from_str_radix(&s[1..len-2], 2).unwrap();
-    trace!("Got a binary number = {}", number);
-    number
-}
-
-#[allow(dead_code)]
-fn get_identifier(pair: Pair<Rule>) -> String {
-    let identifier = pair.as_str().to_owned();
-    trace!("Got an identifier = {}", identifier);
-    identifier
-}
-
-#[allow(dead_code)]
-fn print_pair(pair: Pair<Rule>) {
-    println!("<<{:?}>> '{}'", pair.as_rule(), pair.as_str());
-    print_pairs(pair.into_inner(), 1)
-}
-
-fn print_pairs(pairs: Pairs<Rule>, level: usize) {
-    for pair in pairs {
-        // A pair is a combination of the rule which matched and a span of input
-        println!("{:indent$}<<{:?}>> '{}'", "", pair.as_rule(), pair.as_str(), indent=level*2);
-
-        // A pair can be converted to an iterator of the tokens which make it up:
-        print_pairs(pair.into_inner(), level+1);
+fn print_single_node(node: &Node) {
+    let text = node.as_str();
+    if text.len() > 60 {
+        println!("<<{:?}>> '{}...'", node.as_rule(), &text[..60]);
+    } else {
+        println!("<<{:?}>> '{}'", node.as_rule(), text);
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pest::Parser;
 
     #[test]
     fn number() {
-        let number = get_number(parse(Rule::number_string, "12345678"));
+        let number = MibParser::number_string(parse(Rule::number_string, "12345678")).unwrap();
         assert_eq!(number, 12345678);
     }
 
@@ -102,40 +147,40 @@ mod tests {
 
     #[test]
     fn quoted_string_1() {
-        let result = get_quoted_string(parse(Rule::quoted_string, r#""this is a quoted string""#));
+        let result = MibParser::quoted_string(parse(Rule::quoted_string, r#""this is a quoted string""#)).unwrap();
         assert_eq!(result, "this is a quoted string");
     }
 
     #[test]
     fn quoted_string_2() {
-        let result = get_quoted_string(parse(Rule::quoted_string, r#""this is a ""quoted"" string""#));
+        let result = MibParser::quoted_string(parse(Rule::quoted_string, r#""this is a ""quoted"" string""#)).unwrap();
         assert_eq!(result, r#"this is a "quoted" string"#);
     }
 
     #[test]
     fn quoted_string_3() {
-        let result = get_quoted_string(parse(Rule::quoted_string, "\"this is a    \n   quoted string\""));
+        let result = MibParser::quoted_string(parse(Rule::quoted_string, "\"this is a    \n   quoted string\"")).unwrap();
         assert_eq!(result, "this is a\nquoted string");
 
-        let result = get_quoted_string(parse(Rule::quoted_string, "\"this is a    \r\n   quoted string\""));
+        let result = MibParser::quoted_string(parse(Rule::quoted_string, "\"this is a    \r\n   quoted string\"")).unwrap();
         assert_eq!(result, "this is a\nquoted string");
     }
 
     #[test]
     fn binary_string() {
-        let result = get_bin_number(parse(Rule::binary_string, "'11110000'b"));
+        let result = MibParser::binary_string(parse(Rule::binary_string, "'11110000'b")).unwrap();
         assert_eq!(result, 0b11110000);
     }
 
     #[test]
     fn hex_string() {
-        let result = get_hex_number(parse(Rule::hex_string, "'DEADBEEF'H"));
+        let result = MibParser::hex_string(parse(Rule::hex_string, "'DEADBEEF'H")).unwrap();
         assert_eq!(result, 0xDEADBEEF);
     }
 
     #[test]
     fn identifier_0() {
-        let identifier = get_identifier(parse(Rule::identifier, "ab1ur_d-gh0"));
+        let identifier = MibParser::identifier(parse(Rule::identifier, "ab1ur_d-gh0")).unwrap();
         assert_eq!(identifier, "ab1ur_d-gh0");
     }
 
@@ -151,28 +196,21 @@ mod tests {
 
     #[test]
     fn object_id_0() {
-        let pair = parse(Rule::value_assignment, "synology OBJECT IDENTIFIER ::= { enterprises 6574 }");
-        print_pair(pair)
+        let node = parse(Rule::value_assignment, "synology OBJECT IDENTIFIER ::= { enterprises 6574 }");
+        print_node(node)
     }
 
     #[test]
     fn sequence_1() {
-        let pair = parse(Rule::sequence_of_type, "SEQUENCE OF wibble");
-        print_pair(pair)
+        let node = parse(Rule::sequence_of_type, "SEQUENCE OF wibble");
+        print_node(node)
     }
 
     #[test]
     fn snmp_update() {
         let input = r#"LAST-UPDATED "201309110000Z""#;
-        let pair = parse(Rule::snmp_update_part, input);
-        print_pair(pair)
-    }
-    #[test]
-    fn x_identifier()
-    {
-        let input = "synoDisk";
-        let pair = parse(Rule::identifier, input);
-        print_pair(pair)
+        let node = parse(Rule::snmp_update_part, input);
+        print_node(node)
     }
 
     #[test]
@@ -189,23 +227,23 @@ mod tests {
         DESCRIPTION
             "Second draft.""#;
 
-        let pair = parse(Rule::some_type, input);
-        print_pair(pair)
+        let node = parse(Rule::some_type, input);
+        print_node(node)
     }
 
     #[test]
     fn value() {
         let input = "{ synology 2 }";
 
-        let pair = parse(Rule::value, input);
-        print_pair(pair)
+        let node = parse(Rule::value, input);
+        print_node(node)
     }
 
     #[test]
     fn constraint_list() {
         let input = "( SIZE (0..63) )";
-        let pair = parse(Rule::constraint_list, input);
-        print_pair(pair)        
+        let node = parse(Rule::constraint_list, input);
+        print_node(node)        
     }
 
     #[test]
@@ -223,8 +261,8 @@ mod tests {
                 "Second draft."
             ::= { synology 2 }"#;
 
-        let pair = parse(Rule::value_assignment, input);
-        print_pair(pair)        
+        let node = parse(Rule::value_assignment, input);
+        print_node(node)        
     }
 
     #[test]
@@ -235,8 +273,8 @@ mod tests {
         enterprises, MODULE-IDENTITY, OBJECT-TYPE, Integer32
                     FROM SNMPv2-SMI;"#;
 
-        let pair = parse(Rule::import_list, input);
-        print_pair(pair)
+        let node = parse(Rule::import_list, input);
+        print_node(node)
     }
 
     #[test]
@@ -254,8 +292,8 @@ mod tests {
                 "Second draft."
             ::= { synology 2 }"#;
 
-        let pair = parse(Rule::value_assignment, input);
-        print_pair(pair)        
+        let node = parse(Rule::value_assignment, input);
+        print_node(node)        
     }
 
     #[test]
@@ -279,16 +317,16 @@ mod tests {
                 "Second draft."
             ::= { synology 2 }"#;
 
-        let pair = parse(Rule::module_body, input);
-        print_pair(pair)
+        let node = parse(Rule::module_body, input);
+        print_node(node)
     }
 
     #[test]
     fn value_test1() {
         // A very simple value, for example, used in groups
         let input = "rmonEtherStatsGroup";
-        let pair = parse(Rule::value, input);
-        print_pair(pair)
+        let node = parse(Rule::value, input);
+        print_node(node)
     }
 
     #[test]
@@ -296,8 +334,8 @@ mod tests {
         let input = r#"GROUP rmonEtherStatsGroup
         DESCRIPTION
             "The RMON Ethernet Statistics Group is optional.""#;
-        let pair = parse(Rule::compliance_group, input);
-        print_pair(pair)
+        let node = parse(Rule::compliance_group, input);
+        print_node(node)
     }
 
     #[test]
@@ -306,29 +344,26 @@ mod tests {
               GROUP rmonEtherStatsGroup
                   DESCRIPTION
                       "The RMON Ethernet Statistics Group is optional.""#;
-        let pair = parse(Rule::snmp_module_part, input);
-        print_pair(pair)
+        let node = parse(Rule::snmp_module_part, input);
+        print_node(node)
     }
 
     //
     // helpers
     //
-
-    fn parse(rule: Rule, input: &str) -> Pair<Rule> {
-        let result = MibParser::parse(rule, input);
-
-        match result {
-            Err(e) => panic!("Failed parse: {}", e),
-            Ok(mut pairs) => {
-                let pair = pairs.next().unwrap();
-                assert_eq!(pair.as_rule(), rule);
-                if pair.as_str() != input {
+    fn parse(rule: Rule, input: &str) -> Node {
+        match MibParser::parse(rule, input) {
+            Ok(nodes) => {
+                let node = nodes.single().unwrap();
+                assert_eq!(node.as_rule(), rule);
+                if node.as_str() != input {
                     println!("Expected rule({:?}) to fully consume '{}'", rule, input);
-                    print_pair(pair);
+                    print_node(node);
                     panic!("Failed test");
                 }
-                pair
-            }
+                node 
+            },
+            Err(e) => panic!("Parse failed: {}", e)
         }
     }
 
