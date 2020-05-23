@@ -65,7 +65,7 @@ impl MibParser {
     fn module_identifier(node: Node) -> Result<String> {
         Ok(match_nodes!(node.into_children();
             [identifier(mi)] => mi.to_string(), // Without a value
-            [identifier(mi),object_identifier_value(v)] => format!("{}={}", mi.to_string(), v), // With a value
+            [identifier(mi), object_identifier_value(v)] => format!("{}={}", mi.to_string(), v), // With a value
         ))
     }
 
@@ -86,11 +86,11 @@ impl MibParser {
     fn inner_string(node: Node) -> Result<String> {
         let raw = node.as_str().to_owned();
 
-        // Replace double quotes with single
+        // Replace double quotes with single quotes
         let raw = raw.replace("\"\"", "\"");
 
         // Squelch newlines surrounded by spaces or tabs
-        let re = Regex::new(r" *\r?\n *").unwrap();
+        let re = Regex::new(r"[ \t]*\r?\n[ \t]*").unwrap();
 
         Ok(re.replace_all(raw.as_str(), "\n").to_string())
     }
@@ -132,14 +132,18 @@ fn print_nodes(nodes: Nodes, level: usize) {
 }
 
 fn print_single_node(node: &Node) {
-    let text = node.as_str();
-    if text.len() > 60 {
-        // println!("<<{:?}>> '{}...'", node.as_rule(), &text[..60]);
-        println!("<<{:?}>>", node.as_rule());
-    } else {
-        // println!("<<{:?}>> '{}'", node.as_rule(), text);
-        println!("<<{:?}>>", node.as_rule());
+    match node.as_rule() {
+        Rule::identifier => println!("{}", node.as_str()),
+        Rule::number_string => println!("{}", node.as_str()),
+        Rule::inner_string => println!("{}", clean_string(node.as_str())),
+        _ => println!("<<{:?}>>", node.as_rule())
     }
+}
+
+fn clean_string(s: &str) -> String {
+        // Squelch newlines surrounded by spaces or tabs
+        let re = Regex::new(r"[ \t]*\r?\n[ \t]*").unwrap();
+        format!( "\"{}\"", re.replace_all(s, "\\n"))
 }
 
 #[cfg(test)]
