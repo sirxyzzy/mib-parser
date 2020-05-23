@@ -2,6 +2,7 @@ use pest_consume::Parser;
 use pest_consume::match_nodes;
 use regex::Regex;
 use indextree::Arena;
+use itertools::Itertools;
 
 #[allow(dead_code)]
 #[derive(Parser)]
@@ -42,25 +43,34 @@ impl MibParser {
         Ok(())
     }
 
-    fn mib(node: Node) -> Result<usize> {
+    fn mib(node: Node) -> Result<()> {
         // Checks that the children all match the rule `field`, and captures
         // the parsed children in an iterator. `fds` implements
         // `Iterator<Item=f64>` here.
         Ok(match_nodes!(node.into_children();
-            [module_definition(defs)..] => defs.len(),
+            [module_definition(mut defs).., EOI] => trace!("Found modules: {}", defs.join(",")),
         ))
     }
 
     fn module_definition(node: Node) -> Result<String> {
         Ok(match_nodes!(node.into_children();
-            [module_identifier(mi)] => mi.to_string(),
+            [module_identifier(mi), module_body(mb)] => mi.to_string(),
         ))
+    }
+
+    fn module_body(node: Node) -> Result<String> {
+        Ok("BODY".to_owned())
     }
 
     fn module_identifier(node: Node) -> Result<String> {
         Ok(match_nodes!(node.into_children();
-            [identifier(mi)] => mi.to_string(),
+            [identifier(mi)] => mi.to_string(), // Without a value
+            [identifier(mi),object_identifier_value(v)] => format!("{}={}", mi.to_string(), v), // With a value
         ))
+    }
+
+    fn object_identifier_value(node: Node) -> Result<String> {
+        Ok(format!("{:?}", node.as_rule()))
     }
 
     fn identifier(node: Node) -> Result<String> {
@@ -124,9 +134,11 @@ fn print_nodes(nodes: Nodes, level: usize) {
 fn print_single_node(node: &Node) {
     let text = node.as_str();
     if text.len() > 60 {
-        println!("<<{:?}>> '{}...'", node.as_rule(), &text[..60]);
+        // println!("<<{:?}>> '{}...'", node.as_rule(), &text[..60]);
+        println!("<<{:?}>>", node.as_rule());
     } else {
-        println!("<<{:?}>> '{}'", node.as_rule(), text);
+        // println!("<<{:?}>> '{}'", node.as_rule(), text);
+        println!("<<{:?}>>", node.as_rule());
     }
 }
 
