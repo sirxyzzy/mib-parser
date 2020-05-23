@@ -2,7 +2,7 @@
 extern crate log;
 extern crate mib_parser;
 
-use mib_parser::parse_file;
+use mib_parser::{parse_file, ParseOptions};
 use std::path::Path;
 use walkdir::WalkDir;
 use std::time::Instant;
@@ -20,7 +20,11 @@ struct Opts {
 
     /// Set verbose to list parsed files and show the location of parse fails
     #[clap(short,long)]
-    verbose: bool
+    verbose: bool,
+
+    // Pretty print the parse tree
+    #[clap(short,long)]
+    pretty: bool
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -32,11 +36,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let path = Path::new(&opts.mib);
 
+    let options = ParseOptions { pretty_print: opts.pretty };
+
     if path.is_dir() {
         // Batch load of MIBs
         let mut parsed_ok = 0;
         let mut parse_failed = 0;
         let extensions = vec!["txt", "mib"];
+
         for path in WalkDir::new(path).into_iter()
                  .filter_map(|e| e.ok())
                  .filter(|e| e.file_type().is_file())
@@ -44,7 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(ext) = path.extension() {
                 if let Some(sext) = ext.to_str() {
                     if extensions.contains(&sext.to_lowercase().as_str()) {
-                        match parse_file(&path) {
+                        match parse_file(&path, &options) {
                             Ok(_) => {
                                 parsed_ok += 1;
                                 if opts.verbose {
@@ -65,11 +72,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         println!("{} files parsed, {} files failed to parse in {}ms", parsed_ok, parse_failed, now.elapsed().as_millis());
     } else {
-        println!("Parsing {}", path.display());
-        if let Err(e) = parse_file(&path) {
-            error!("Parse failed {}", e)
+        trace!("Parsing {}", path.display());
+        match parse_file(&path, &options) {
+            Err(e) => error!("Parse failed {}", e),
+            Ok(_info) => ()
         }
-        println!("Took {}ms", now.elapsed().as_millis()); 
+        trace!("Took {}ms", now.elapsed().as_millis()); 
     }
 
     Ok(())

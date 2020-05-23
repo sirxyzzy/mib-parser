@@ -9,7 +9,9 @@ use itertools::Itertools;
 #[grammar = "mib.pest"] // relative to src
 struct MibParser;
 
+use crate::*;
 use pest_consume::Error;
+
 type Result<T> = std::result::Result<T, Error<Rule>>;
 type Node<'i> = pest_consume::Node<'i, Rule, ()>;
 type Nodes<'i> = pest_consume::Nodes<'i, Rule, ()>;
@@ -21,19 +23,17 @@ pub struct ObjectIdentifierNode {
     pub name: String
 }
 
-pub fn parse_mib(mib_text: &str) -> Result<()> {
+pub fn parse_mib(mib_text: &str, options: &ParseOptions) -> Result<MibInfo> {
     let _arena = &mut Arena::<ObjectIdentifierNode>::new();
     let nodes = MibParser::parse(Rule::mib, mib_text)?;
 
     let main_node = nodes.single()?;
 
-    if log::log_enabled!(log::Level::Trace) {
+    if options.pretty_print {
         print_node(main_node.clone());
     }
 
-    MibParser::mib(main_node)?;
-
-    Ok(())
+    MibParser::mib(main_node)
 }
 
 // This is the other half of the parser, using pest_consume.
@@ -43,13 +43,15 @@ impl MibParser {
         Ok(())
     }
 
-    fn mib(node: Node) -> Result<()> {
+    fn mib(node: Node) -> Result<MibInfo> {
         // Checks that the children all match the rule `field`, and captures
         // the parsed children in an iterator. `fds` implements
         // `Iterator<Item=f64>` here.
-        Ok(match_nodes!(node.into_children();
+        match_nodes!(node.into_children();
             [module_definition(mut defs).., EOI] => trace!("Found modules: {}", defs.join(",")),
-        ))
+        );
+
+        Ok(MibInfo{})
     }
 
     fn module_definition(node: Node) -> Result<String> {
