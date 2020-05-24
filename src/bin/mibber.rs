@@ -24,7 +24,11 @@ struct Opts {
 
     // Pretty print the parse tree
     #[clap(short,long)]
-    pretty: bool
+    pretty: bool,
+
+    // Print the result as yaml
+    #[clap(short,long)]
+    yaml: bool,    
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -52,10 +56,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if let Some(sext) = ext.to_str() {
                     if extensions.contains(&sext.to_lowercase().as_str()) {
                         match parse_file(&path, &options) {
-                            Ok(_) => {
+                            Ok(info) => {
                                 parsed_ok += 1;
                                 if opts.verbose {
                                     println!("Parsed {}", path.display());
+                                }
+
+                                if opts.yaml {
+                                    println!("{}", serde_yaml::to_string(&info)?);
                                 }
                             },
                             Err(e) => {
@@ -75,7 +83,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         trace!("Parsing {}", path.display());
         match parse_file(&path, &options) {
             Err(e) => error!("Parse failed {}", e),
-            Ok(_info) => ()
+            Ok(info) => {
+                if opts.yaml {
+                    println!("{}", serde_yaml::to_string(&info)?);
+                }
+            }
         }
         trace!("Took {}ms", now.elapsed().as_millis()); 
     }

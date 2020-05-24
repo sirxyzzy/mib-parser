@@ -2,7 +2,8 @@ use pest_consume::Parser;
 use pest_consume::match_nodes;
 use regex::Regex;
 use indextree::Arena;
-use itertools::Itertools;
+use serde::{Serialize, Deserialize};
+// use itertools::Itertools;
 
 #[allow(dead_code)]
 #[derive(Parser)]
@@ -21,6 +22,26 @@ type Nodes<'i> = pest_consume::Nodes<'i, Rule, ()>;
 pub struct ObjectIdentifierNode {
     pub id: u64,
     pub name: String
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct MibInfo {
+    pub modules: Vec<Module>,
+}
+
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct Module {
+    pub name: String,
+    pub assignments: Vec<Assignment>,
+}
+
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct Assignment {
+    pub name: String,
+    pub a_type: String,
+    pub value: Option<String> 
 }
 
 pub fn parse_mib(mib_text: &str, options: &ParseOptions) -> Result<MibInfo> {
@@ -47,21 +68,65 @@ impl MibParser {
         // Checks that the children all match the rule `field`, and captures
         // the parsed children in an iterator. `fds` implements
         // `Iterator<Item=f64>` here.
-        match_nodes!(node.into_children();
-            [module_definition(mut defs).., EOI] => trace!("Found modules: {}", defs.join(",")),
-        );
-
-        Ok(MibInfo{})
-    }
-
-    fn module_definition(node: Node) -> Result<String> {
         Ok(match_nodes!(node.into_children();
-            [module_identifier(mi), module_body(mb)] => mi.to_string(),
+            [module_definition(mut defs).., EOI] => MibInfo{ modules: defs.collect()},
         ))
     }
 
-    fn module_body(node: Node) -> Result<String> {
-        Ok("BODY".to_owned())
+    fn module_definition(node: Node) -> Result<Module> {
+        Ok(match_nodes!(node.into_children();
+            [module_identifier(mi), module_body(mbs)] => Module{ name: mi, assignments: mbs},
+        ))
+    }
+
+    fn module_body(node: Node) -> Result<Vec<Assignment>> {
+        Ok(match_nodes!(node.into_children();
+            [assignment_list(a)] => a,
+            [export_list(e), assignment_list(a)] => a,
+            [import_list(i), assignment_list(a)] => a,
+            [export_list(e), import_list(i), assignment_list(a)] => a,
+        ))
+    }
+
+    fn import_list(node: Node) -> Result<String> {
+        Ok(format!("{:?}", node.as_rule()))
+    }
+
+    fn export_list(node: Node) -> Result<String> {
+        Ok(format!("{:?}", node.as_rule()))
+    }
+
+    fn assignment_list(node: Node) -> Result<Vec<Assignment>> {
+        Ok(match_nodes!(node.into_children();
+            [assignment(assignments)..] => assignments.collect(),
+        ))
+    }
+
+    fn assignment(node: Node) -> Result<Assignment> {
+        Ok(match_nodes!(node.into_children();
+            [value_assignment(a)] => a,
+            [type_assignment(a)] => a,
+        ))
+    }
+
+    fn value_assignment(node: Node) -> Result<Assignment> {
+        Ok(match_nodes!(node.into_children();
+            [identifier(i), some_type(t), value(v)] => Assignment{name: i, a_type: t, value:Some(v)}
+        ))
+    }
+
+    fn type_assignment(node: Node) -> Result<Assignment> {
+        Ok(match_nodes!(node.into_children();
+            [identifier(i), some_type(t)] => Assignment{name: i, a_type: t, value:None}
+        ))
+    }
+
+    fn some_type(node: Node) -> Result<String> {
+        Ok(format!("{:?}", node.as_rule()))
+    }
+
+    fn value(node: Node) -> Result<String> {
+        Ok(node.as_str().to_owned())
     }
 
     fn module_identifier(node: Node) -> Result<String> {
