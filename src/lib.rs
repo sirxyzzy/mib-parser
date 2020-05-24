@@ -3,12 +3,31 @@ extern crate serde;
 #[macro_use]
 extern crate log;
 
+use serde::{Serialize, Deserialize};
 use std::path::Path;
 use std::fs;
 
-pub use parser::MibInfo;
-
 mod parser;
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct MibInfo {
+    pub modules: Vec<Module>,
+}
+
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct Module {
+    pub name: String,
+    pub assignments: Vec<Assignment>,
+}
+
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct Assignment {
+    pub name: String,
+    pub a_type: String,
+    pub value: Option<String> 
+}
 
 pub struct ParseOptions {
     pub pretty_print: bool
