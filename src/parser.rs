@@ -401,7 +401,7 @@ mod tests {
     }
 
     //
-    // helpers
+    // test helpers
     //
     fn parse(rule: Rule, input: &str) -> Node {
         match MibParser::parse(rule, input) {
